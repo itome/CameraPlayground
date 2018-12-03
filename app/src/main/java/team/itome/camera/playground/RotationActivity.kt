@@ -2,13 +2,16 @@ package team.itome.camera.playground
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Matrix
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.os.Bundle
 import android.view.Surface
 import android.view.TextureView
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import team.itome.camera2sample.R
 
@@ -47,6 +50,7 @@ class RotationActivity : AppCompatActivity() {
                     p1: Int,
                     p2: Int
                 ) {
+                    rotateTextureView()
                 }
 
                 override fun onSurfaceTextureUpdated(texture: SurfaceTexture?) {}
@@ -57,6 +61,7 @@ class RotationActivity : AppCompatActivity() {
 
     @SuppressLint("MissingPermission")
     private fun openCamera() {
+        rotateTextureView()
         cameraManager.openCamera("0", object : CameraDevice.StateCallback() {
             override fun onOpened(camera: CameraDevice) {
                 cameraDevice = camera
@@ -101,5 +106,36 @@ class RotationActivity : AppCompatActivity() {
         )
     }
 
+    private fun rotateTextureView() {
+        val orientation = getApplicationOrientation()
+        val viewWidth = textureView.width
+        val viewHeight = textureView.height
+        val matrix = Matrix()
+        matrix.postRotate(-orientation.toFloat(), viewWidth * 0.5F, viewHeight * 0.5F)
+        textureView.setTransform(matrix)
+    }
+
+    private fun getOrientation(cameraId: String): Int {
+        val cameraOrientation = getCameraOrientation(cameraId)
+        val applicationOrientation = getApplicationOrientation()
+        return cameraOrientation - applicationOrientation
+    }
+
+    private fun getCameraOrientation(cameraId: String): Int {
+        val characteristic = cameraManager.getCameraCharacteristics(cameraId)
+        return characteristic.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+    }
+
+    private fun getApplicationOrientation(): Int {
+        val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val rotation = windowManager.defaultDisplay.rotation
+        return when (rotation) {
+            Surface.ROTATION_0 -> 0
+            Surface.ROTATION_90 -> 90
+            Surface.ROTATION_180 -> 180
+            Surface.ROTATION_270 -> 270
+            else -> throw IllegalStateException()
+        }
+    }
 }
 
