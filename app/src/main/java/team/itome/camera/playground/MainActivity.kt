@@ -17,15 +17,16 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         findViewById<View>(R.id.button_preview).setOnClickListener {
-            if (!hasCameraPermission() || !hasStoragePermission()) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                    REQUEST_CAMERA
-                )
-            } else {
-                startActivity(Intent(this, PreviewActivity::class.java))
-            }
+            startActivityWithPermissionCheck(
+                Intent(this, PreviewActivity::class.java),
+                REQUEST_PREVIEW
+            )
+        }
+        findViewById<View>(R.id.button_rotation).setOnClickListener {
+            startActivityWithPermissionCheck(
+                Intent(this, RotationActivity::class.java),
+                REQUEST_ROTATION
+            )
         }
     }
 
@@ -34,13 +35,29 @@ class MainActivity : AppCompatActivity() {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
-        if (requestCode == REQUEST_CAMERA && grantResults.size == 2
-            && grantResults[0] == PackageManager.PERMISSION_GRANTED
-            && grantResults[1] == PackageManager.PERMISSION_GRANTED
+        if (grantResults.size != 2
+            || grantResults[0] != PackageManager.PERMISSION_GRANTED
+            || grantResults[1] != PackageManager.PERMISSION_GRANTED
         ) {
-            startActivity(Intent(this, PreviewActivity::class.java))
-        } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            return
+        }
+
+        when (requestCode) {
+            REQUEST_PREVIEW -> startActivity(Intent(this, PreviewActivity::class.java))
+            REQUEST_ROTATION -> startActivity(Intent(this, RotationActivity::class.java))
+        }
+    }
+
+    private fun startActivityWithPermissionCheck(intent: Intent, requestCode: Int) {
+        if (!hasCameraPermission() || !hasStoragePermission()) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                requestCode
+            )
+        } else {
+            startActivity(intent)
         }
     }
 
@@ -59,7 +76,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val REQUEST_CAMERA = 1
+        private const val REQUEST_PREVIEW = 1
+        private const val REQUEST_ROTATION = 2
     }
 }
 
